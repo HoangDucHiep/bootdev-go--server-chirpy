@@ -18,6 +18,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	jwtSecretKey   string
 }
 
 func main() {
@@ -32,12 +33,18 @@ func main() {
 
 	platform := os.Getenv("PLATFORM")
 
+	jwtSecretKey := os.Getenv("SECRET_KEY")
+	if jwtSecretKey == "" {
+		log.Fatal("SECRET_KEY environment variable is not set")
+	}
+
 	const filepathRoot = "."
 	const port = ":8080"
 	cfg := &apiConfig{
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		platform:       platform,
+		jwtSecretKey:   jwtSecretKey,
 	}
 
 	mux := http.NewServeMux()
@@ -53,6 +60,7 @@ func main() {
 	//mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
 
 	mux.HandleFunc("POST /api/users", cfg.handlerCreateUser)
+	mux.HandleFunc("POST /api/login", cfg.handlerLogin)
 
 	mux.HandleFunc("POST /api/chirps", cfg.handlerCreateChirp)
 	mux.HandleFunc("GET /api/chirps", cfg.handlerGetAllChirps)
